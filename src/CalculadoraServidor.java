@@ -58,26 +58,32 @@ public class CalculadoraServidor {
         }
 
         private boolean esOperador(String token) {
-            return "+-*/%&|^~()**".contains(token);
+            return "+-*/%&|^~()**".contains(token) || "**".equals(token);
         }
+
 
         // Función para construir el árbol a partir de una expresión en notación postfija
         public void construirDesdePostfija(String postfija) {
             Stack<NodoExpresion> pila = new Stack<>();
             String[] tokens = postfija.split(" ");
 
-            for (String token : tokens) {
-                if (esOperador(token)) {
-                    NodoExpresion nodo = new NodoExpresion(token);
-                    nodo.derecho = (pila.isEmpty()) ? null : pila.pop();
-                    nodo.izquierdo = (pila.isEmpty()) ? null : pila.pop();
-                    pila.push(nodo);
-                } else {
-                    pila.push(new NodoExpresion(token));
-                }
+            for (int i = 0; i < tokens.length; i++) {
+                String token = tokens[i];
+            if (esOperador(token)) {
+                NodoExpresion nodo = new NodoExpresion(token);
+                nodo.derecho = (pila.isEmpty()) ? null : pila.pop();
+                nodo.izquierdo = (pila.isEmpty()) ? null : pila.pop();
+                pila.push(nodo);
+                System.out.println("Empujando nodo operador: " + nodo.dato + ", Izquierdo: " + (nodo.izquierdo != null ? nodo.izquierdo.dato : "null") + ", Derecho: " + (nodo.derecho != null ? nodo.derecho.dato : "null"));  // <-- AQUÍ
+            } else {
+                pila.push(new NodoExpresion(token));
+                System.out.println("Empujando nodo valor: " + token);  // <-- AQUÍ
+            }
+
             }
             this.raiz = pila.pop();
         }
+
 
 
         // Función para evaluar el árbol
@@ -107,25 +113,35 @@ public class CalculadoraServidor {
 
             double izquierdo = evaluarRecursivo(nodo.izquierdo);
             double derecho = evaluarRecursivo(nodo.derecho);
-
+            System.out.println("Nodo actual: " + nodo.dato + ", Izquierdo: " + izquierdo + ", Derecho: " + derecho);  // <-- AQUÍ
             trazabilidad.append("paso ").append(trazabilidad.toString().split("\n").length).append(": ");
             trazabilidad.append("(").append(izquierdo).append(" ").append(nodo.dato).append(" ").append(derecho).append(")").append("\n");
 
-            switch (nodo.dato.charAt(0)) {
-                case '+':
+            switch (nodo.dato) {
+                case "+":
+                    System.out.println("Sumando...");  // <-- AQUÍ
                     return izquierdo + derecho;
-                case '-':
+                case "-":
+                    System.out.println("Restando...");  // <-- AQUÍ
                     return izquierdo - derecho;
-                case '*':
-                    if ("**".equals(nodo.dato)) {
-                        return Math.pow(izquierdo, derecho);
-                    }
+                case "*":
+                    System.out.println("Multiplicando...");  // <-- AQUÍ
                     return izquierdo * derecho;
-                case '/':
+                case "^":
+                case "**":
+                    System.out.println("Elevando al poder...");  // <-- AQUÍ
+                    return Math.pow(izquierdo, derecho);
+                case "/":
                     return izquierdo / derecho;
-                case '%':
+                case "%":
                     return izquierdo % derecho;
+//                case "^":  // Manejo de XOR
+//                    return (int)izquierdo ^ (int)derecho;
+                // ... otros casos
             }
+
+
+
             throw new IllegalArgumentException("Operador no soportado: " + nodo.dato);
         }
 
@@ -170,148 +186,170 @@ public class CalculadoraServidor {
     }
 
     private static class ClienteHandler implements Runnable {
-        private Socket clienteSocket;
+            private Socket clienteSocket;
 
-        public ClienteHandler(Socket socket) {
-            this.clienteSocket = socket;
-        }
-
-        private int prioridad(char operador) {
-            switch (operador) {
-                case '+':
-                case '-':
-                    return 1;
-                case '*':
-                case '/':
-                case '%':
-                    return 2;
-                case '^':
-                    return 3;
-                case '&':
-                case '|':
-                case '~':
-                    return 4;
+            public ClienteHandler(Socket socket) {
+                this.clienteSocket = socket;
             }
-            return -1;
-        }
 
-        @Override
-        public void run() {
-            try (BufferedReader entrada = new BufferedReader(new InputStreamReader(clienteSocket.getInputStream()));
-                 PrintWriter salida = new PrintWriter(clienteSocket.getOutputStream(), true)) {
-
-                String expresion = entrada.readLine();
-
-                if (!esEntradaValida(expresion)) {
-                    salida.println("Error: La expresión no puede contener operadores algebraicos y lógicos al mismo tiempo.");
-                    return;
+            private int prioridad(char operador) {
+                switch (operador) {
+                    case '+':
+                    case '-':
+                        return 1;
+                    case '*':
+                    case '/':
+                    case '%':
+                        return 2;
+                    case '^':
+                        return 3;
+                    case '&':
+                    case '|':
+                    case '~':
+                        return 4;
                 }
-
-                System.out.println("Evaluando expresión: " + expresion);
-                double resultado = evaluarExpresion(expresion);
-                System.out.println("Resultado obtenido: " + resultado);
-
-                salida.println(resultado);
-
-                // Registrar en el CSV
-                System.out.println("Registrando en el CSV: " + expresion + ", " + resultado);
-                registrarEnCSV(expresion, String.valueOf(resultado));
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        private double evaluarExpresion(String expresion) {
-            textAreaLog.append("Convirtiendo expresión a postfija...\\n");
-            String postfija = convertirApostfija(expresion);
-            textAreaLog.append("Expresión postfija: " + postfija + "\\n");
-
-            ArbolExpresion arbol;
-
-            if (expresion.contains("&") || expresion.contains("|") || expresion.contains("^") || expresion.contains("~")) {
-                arbol = new ArbolLogico();
-            } else {
-                arbol = new ArbolAlgebraico();
+                return -1;
             }
 
-            arbol.construirDesdePostfija(postfija);
-            try {
-                double result = arbol.evaluar();
-                if (arbol instanceof ArbolAlgebraico) {
-                    System.out.println(((ArbolAlgebraico) arbol).getTrazabilidad());
+            @Override
+            public void run() {
+                try (BufferedReader entrada = new BufferedReader(new InputStreamReader(clienteSocket.getInputStream()));
+                     PrintWriter salida = new PrintWriter(clienteSocket.getOutputStream(), true)) {
+
+                    String expresion = entrada.readLine();
+                    System.out.println("Recibida expresión: " + expresion);
+
+
+                    if (!esEntradaValida(expresion)) {
+                        salida.println("Error: La expresión no puede contener operadores algebraicos y lógicos al mismo tiempo.");
+                        return;
+                    }
+
+                    System.out.println("Evaluando expresión: " + expresion);
+                    double resultado = evaluarExpresion(expresion);
+                    System.out.println("Resultado obtenido: " + resultado);
+
+                    salida.println(resultado);
+
+                    // Registrar en el CSV
+                    System.out.println("Registrando en el CSV: " + expresion + ", " + resultado);
+                    registrarEnCSV(expresion, String.valueOf(resultado));
+
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-                textAreaLog.append("Resultado de evaluar el árbol: " + result + "\n");
-                return result;
-            } catch (IllegalArgumentException e) {
-                textAreaLog.append(e.getMessage() + "\\n");
-                throw e;
             }
-        }
 
-        private boolean esEntradaValida(String expresion) {
-            boolean contieneOperadoresLogicos = expresion.contains("&") || expresion.contains("|") || expresion.contains("^") || expresion.contains("~");
-            boolean contieneOperadoresAlgebraicos = expresion.contains("+") || expresion.contains("-") || expresion.contains("*") || expresion.contains("/") || expresion.contains("%") || expresion.contains("**");
+            private double evaluarExpresion(String expresion) {
+                textAreaLog.append("Convirtiendo expresión a postfija...\\n");
+                String postfija = convertirApostfija(expresion);
+                System.out.println("Notación postfija: " + postfija);
+                textAreaLog.append("Expresión postfija: " + postfija + "\\n");
+                boolean valid = esEntradaValida(expresion);
+                System.out.println("Es entrada válida: " + valid);
+                ArbolExpresion arbol;
 
-            if (contieneOperadoresLogicos && contieneOperadoresAlgebraicos) {
-                return false;
-            }
-            return true;
-        }
-
-        private void registrarEnCSV(String expresion, String resultado) {
-            String archivo = "operaciones.csv";
-            try (FileWriter fw = new FileWriter(archivo, true);
-                 BufferedWriter bw = new BufferedWriter(fw);
-                 PrintWriter out = new PrintWriter(bw)) {
-
-                String registro = new Date() + "," + expresion + "," + resultado;
-                out.println(registro);
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        private String convertirApostfija(String infija) {
-            StringBuilder postfijaBuilder = new StringBuilder();
-            Queue<String> postfija = new LinkedList<>();
-            Stack<Character> pila = new Stack<>();
-
-            for (int i = 0; i < infija.length(); i++) {
-                char c = infija.charAt(i);
-
-                if (Character.isDigit(c) || c == '.') {
-                    StringBuilder numero = new StringBuilder();
-                    while (i < infija.length() && (Character.isDigit(infija.charAt(i)) || infija.charAt(i) == '.')) {
-                        numero.append(infija.charAt(i++));
-                    }
-                    postfija.add(numero.toString());
-                    i--;
-                } else if (c == '(') {
-                    pila.push(c);
-                } else if (c == ')') {
-                    while (!pila.isEmpty() && pila.peek() != '(') {
-                        postfija.add(String.valueOf(pila.pop()));
-                    }
-                    if (!pila.isEmpty()) pila.pop(); // Eliminar el paréntesis de apertura '('
+                if (expresion.contains("&") || expresion.contains("|") || expresion.contains("^") || expresion.contains("~")) {
+                    arbol = new ArbolLogico();
+                    System.out.println("Usando ArbolLogico");  // <-- AQUÍ
                 } else {
-                    while (!pila.isEmpty() && prioridad(pila.peek()) >= prioridad(c)) {
-                        postfija.add(String.valueOf(pila.pop()));
+                    arbol = new ArbolAlgebraico();
+                    System.out.println("Usando ArbolAlgebraico");  // <-- AQUÍ
+                }
+
+
+                arbol.construirDesdePostfija(postfija);
+                System.out.println("Árbol construido desde postfija");
+                try {
+                    System.out.println("Evaluando el árbol...");  // <-- AQUÍ
+                    double result = arbol.evaluar();
+                    if (arbol instanceof ArbolAlgebraico) {
+                        System.out.println(((ArbolAlgebraico) arbol).getTrazabilidad());
                     }
-                    pila.push(c);
+                    textAreaLog.append("Resultado de evaluar el árbol: " + result + "\n");
+                    return result;
+                } catch (IllegalArgumentException e) {
+                    System.out.println("Error durante la evaluación: " + e.getMessage());  // <-- AQUÍ
+                    textAreaLog.append(e.getMessage() + "\\n");
+                    throw e;
                 }
             }
 
-            while (!pila.isEmpty()) {
-                postfija.add(String.valueOf(pila.pop()));
+            private boolean esEntradaValida(String expresion) {
+                boolean contieneOperadoresLogicos = expresion.contains("&") || expresion.contains("|") || (expresion.contains("^") && !expresion.contains("**")) || expresion.contains("~");
+                boolean contieneOperadoresAlgebraicos = expresion.contains("+") || expresion.contains("-") || expresion.contains("*") || expresion.contains("/") || expresion.contains("%") || expresion.contains("**");
+
+                if (contieneOperadoresLogicos && contieneOperadoresAlgebraicos) {
+                    return false;
+                }
+                return true;
             }
 
-            while (!postfija.isEmpty()) {
-                postfijaBuilder.append(postfija.poll()).append(' ');
+            private void registrarEnCSV(String expresion, String resultado) {
+                String archivo = "operaciones.csv";
+                try (FileWriter fw = new FileWriter(archivo, true);
+                     BufferedWriter bw = new BufferedWriter(fw);
+                     PrintWriter out = new PrintWriter(bw)) {
+
+                    String registro = new Date() + "," + expresion + "," + resultado;
+                    out.println(registro);
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
-            return postfijaBuilder.toString().trim();
-        }
+            private String convertirApostfija(String infija) {
+                StringBuilder postfijaBuilder = new StringBuilder();
+                Queue<String> postfija = new LinkedList<>();
+                Stack<Character> pila = new Stack<>();
+                for (int i = 0; i < infija.length(); i++) {
+                    char c = infija.charAt(i);
+
+                    if (Character.isDigit(c) || c == '.') {
+                        StringBuilder numero = new StringBuilder();
+                        while (i < infija.length() && (Character.isDigit(infija.charAt(i)) || infija.charAt(i) == '.')) {
+                            numero.append(infija.charAt(i++));
+                        }
+                        postfija.add(numero.toString());
+                        i--;
+                    } else if (c == '(') {
+                        pila.push(c);
+                    } else if (c == ')') {
+                        while (!pila.isEmpty() && pila.peek() != '(') {
+                            postfija.add(String.valueOf(pila.pop()));
+                        }
+                        if (!pila.isEmpty()) pila.pop();
+                    } else {
+                        // Detectar el operador **
+                       if (c == '*' && i + 1 < infija.length() && infija.charAt(i + 1) == '*') {
+                            i++;  // Saltar el próximo '*'
+                            pila.push('^');  // Usamos '^' para representar la potencia en la pila.
+                        }else {
+                            while (!pila.isEmpty() && prioridad(pila.peek()) >= prioridad(c)) {
+                                postfija.add(String.valueOf(pila.pop()));
+                            }
+                            pila.push(c);
+                        }
+                    }
+                }
+                while (!pila.isEmpty()) {
+                    char operador = pila.pop();
+                    if (operador == '^') {
+                        postfija.add("**");
+                    } else {
+                        postfija.add(String.valueOf(operador));
+                    }
+                }
+
+
+                while (!postfija.isEmpty()) {
+                    postfijaBuilder.append(postfija.poll()).append(' ');
+                }
+
+                return postfijaBuilder.toString().trim();
+            }
+
+
     }
 }

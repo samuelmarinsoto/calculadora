@@ -7,7 +7,8 @@ import java.net.Socket;
 public class ClienteGUI {
 
     private JFrame frame;
-    private JTextField textFieldExpresion;
+    private JTextField textFieldExpresionAlgebraica;
+    private JTextField textFieldExpresionLogica;
     private JTextArea textAreaResultado;
     private static final String SERVER_ADDRESS = "localhost";
     private static final int SERVER_PORT = 8080;
@@ -23,7 +24,6 @@ public class ClienteGUI {
             }
         });
     }
-
     public ClienteGUI() {
         frame = new JFrame();
         frame.setBounds(100, 100, 750, 300);
@@ -34,8 +34,10 @@ public class ClienteGUI {
         JPanel algebraicPanel = new JPanel();
         algebraicPanel.setBorder(BorderFactory.createTitledBorder("Algebraica"));
         algebraicPanel.setLayout(new BorderLayout());
-        textFieldExpresion = new JTextField();
-        algebraicPanel.add(textFieldExpresion, BorderLayout.NORTH);
+        textFieldExpresionAlgebraica = new JTextField();
+        algebraicPanel.add(textFieldExpresionAlgebraica, BorderLayout.NORTH);
+
+
 
         btnEvaluar = new JButton("Evaluar");
         btnEvaluar.addActionListener(e -> enviarExpresion());
@@ -47,11 +49,17 @@ public class ClienteGUI {
             JButton button = new JButton(text);
             button.setBackground(Color.BLACK);
             button.setForeground(Color.WHITE);
-            button.addActionListener(e -> textFieldExpresion.setText(textFieldExpresion.getText() + text));
+            button.addActionListener(e -> textFieldExpresionAlgebraica.setText(textFieldExpresionAlgebraica.getText() + text));
             algebraicButtonsPanel.add(button);
         }
         algebraicPanel.add(algebraicButtonsPanel, BorderLayout.CENTER);
+        // Logic section input
+        textFieldExpresionLogica = new JTextField();
+        algebraicPanel.add(textFieldExpresionLogica, BorderLayout.SOUTH);
 
+        btnEvaluar = new JButton("Evaluar");
+        btnEvaluar.addActionListener(e -> enviarExpresion());
+        algebraicPanel.add(btnEvaluar, BorderLayout.SOUTH);
         // Logical section
         JPanel logicPanel = new JPanel();
         logicPanel.setBorder(BorderFactory.createTitledBorder("Lógica"));
@@ -63,7 +71,7 @@ public class ClienteGUI {
             String text = logicButtons[i];
             String symbol = logicSymbols[i];
             JButton button = new JButton(text);
-            button.addActionListener(e -> textFieldExpresion.setText(textFieldExpresion.getText() + symbol));
+            button.addActionListener(e -> textFieldExpresionLogica.setText(textFieldExpresionLogica.getText() + symbol));
             button.setForeground(Color.white);
             button.setBackground(Color.black);
             logicPanel.add(button);
@@ -101,11 +109,18 @@ public class ClienteGUI {
     }
 
     private void enviarExpresion() {
+        // Determine from which textField the expression is coming from (Algebraic or Logic)
+        String expresion;
+        if (!textFieldExpresionAlgebraica.getText().isEmpty()) {
+            expresion = "ALGEBRAIC:" + textFieldExpresionAlgebraica.getText();
+        } else {
+            expresion = "LOGIC:" + textFieldExpresionLogica.getText();
+        }
+
         try (Socket socket = new Socket(SERVER_ADDRESS, SERVER_PORT);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
-            String expresion = textFieldExpresion.getText();
             out.println(expresion);
             String resultado = in.readLine();
             textAreaResultado.setText("Resultado de " + expresion + ":\n" + resultado);
