@@ -9,9 +9,9 @@ public class ClienteGUI {
     private JFrame frame;
     private JTextField textFieldExpresion;
     private JTextArea textAreaResultado;
-    private JButton btnEvaluar;
     private static final String SERVER_ADDRESS = "localhost";
     private static final int SERVER_PORT = 8080;
+    private JButton btnEvaluar;
 
     public static void main(String[] args) {
         EventQueue.invokeLater(() -> {
@@ -26,27 +26,78 @@ public class ClienteGUI {
 
     public ClienteGUI() {
         frame = new JFrame();
-        frame.setBounds(100, 100, 450, 300);
+        frame.setBounds(100, 100, 750, 300);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.getContentPane().setLayout(null);
+        frame.getContentPane().setLayout(new GridLayout(1, 3));
 
+        // Algebraic section
+        JPanel algebraicPanel = new JPanel();
+        algebraicPanel.setBorder(BorderFactory.createTitledBorder("Algebraica"));
+        algebraicPanel.setLayout(new BorderLayout());
         textFieldExpresion = new JTextField();
-        textFieldExpresion.setBounds(10, 11, 414, 20);
-        frame.getContentPane().add(textFieldExpresion);
-        textFieldExpresion.setColumns(10);
+        algebraicPanel.add(textFieldExpresion, BorderLayout.NORTH);
 
         btnEvaluar = new JButton("Evaluar");
         btnEvaluar.addActionListener(e -> enviarExpresion());
-        btnEvaluar.setBounds(335, 42, 89, 23);
-        frame.getContentPane().add(btnEvaluar);
+        algebraicPanel.add(btnEvaluar, BorderLayout.SOUTH);
 
-        JScrollPane scrollPane = new JScrollPane();
-        scrollPane.setBounds(10, 76, 414, 174);
-        frame.getContentPane().add(scrollPane);
+        JPanel algebraicButtonsPanel = new JPanel(new GridLayout(4, 4));
+        String[] algebraicButtons = {"7", "8", "9", "+", "4", "5", "6", "-", "1", "2", "3", "*", "0", "/", "%", "**"};
+        for (String text : algebraicButtons) {
+            JButton button = new JButton(text);
+            button.setBackground(Color.BLACK);
+            button.setForeground(Color.WHITE);
+            button.addActionListener(e -> textFieldExpresion.setText(textFieldExpresion.getText() + text));
+            algebraicButtonsPanel.add(button);
+        }
+        algebraicPanel.add(algebraicButtonsPanel, BorderLayout.CENTER);
+
+        // Logical section
+        JPanel logicPanel = new JPanel();
+        logicPanel.setBorder(BorderFactory.createTitledBorder("Lógica"));
+        logicPanel.setLayout(new GridLayout(3, 2));
+
+        String[] logicButtons = {"AND (&)", "OR (|)", "XOR (^)", "NOT (~)", "1", "0"};
+        String[] logicSymbols = {"&", "|", "^", "~", "1", "0"};
+        for (int i = 0; i < logicButtons.length; i++) {
+            String text = logicButtons[i];
+            String symbol = logicSymbols[i];
+            JButton button = new JButton(text);
+            button.addActionListener(e -> textFieldExpresion.setText(textFieldExpresion.getText() + symbol));
+            button.setForeground(Color.white);
+            button.setBackground(Color.black);
+            logicPanel.add(button);
+        }
+
+     // History and camera section
+        JPanel historyCameraPanel = new JPanel();
+        historyCameraPanel.setLayout(new BorderLayout());
+
+        JPanel buttonsPanel = new JPanel();
+        buttonsPanel.setLayout(new GridLayout(2, 1));  // 2 rows, 1 column
+        JButton btnHistorial = new JButton("Historial");
+        btnHistorial.setBackground(Color.BLACK);
+        btnHistorial.setForeground(Color.WHITE);
+        buttonsPanel.add(btnHistorial);
+
+        JButton btnCamera = new JButton("Cámara");
+        buttonsPanel.add(btnCamera);
+        btnCamera.setBackground(Color.BLACK);
+        btnCamera.setForeground(Color.WHITE);
+        historyCameraPanel.add(buttonsPanel, BorderLayout.WEST);
 
         textAreaResultado = new JTextArea();
         textAreaResultado.setEditable(false);
-        scrollPane.setViewportView(textAreaResultado);
+        JScrollPane scrollPane = new JScrollPane(textAreaResultado);
+//        scrollPane.setBackground(Color.BLACK);
+//        scrollPane.setForeground(Color.WHITE);
+        historyCameraPanel.add(scrollPane, BorderLayout.CENTER);
+
+
+
+        frame.getContentPane().add(algebraicPanel);
+        frame.getContentPane().add(logicPanel);
+        frame.getContentPane().add(historyCameraPanel);
     }
 
     private void enviarExpresion() {
