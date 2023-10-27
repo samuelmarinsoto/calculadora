@@ -1,10 +1,44 @@
+import javax.swing.*;
+import java.awt.*;
 import java.io.*;
 import java.net.*;
 import java.util.Date;
 import java.util.Stack;
-
+import java.util.LinkedList;
+import java.util.Queue;
 public class CalculadoraServidor {
     private static final int PUERTO = 8080;
+    private static JTextArea textAreaLog;  // Área de registro para mostrar el análisis
+
+    public static void main(String[] args) {
+        // Inicializando la GUI
+        initGUI();
+
+        try (ServerSocket serverSocket = new ServerSocket(PUERTO)) {
+            System.out.println("Servidor iniciado en el puerto " + PUERTO);
+
+            while (true) {
+                Socket clienteSocket = serverSocket.accept();
+                new Thread(new ClienteHandler(clienteSocket)).start();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void initGUI() {
+        JFrame frame = new JFrame("Servidor - Análisis de Árbol de Expresión");
+        frame.setSize(600, 400);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new BorderLayout());
+
+        textAreaLog = new JTextArea();
+        textAreaLog.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(textAreaLog);
+        frame.add(scrollPane, BorderLayout.CENTER);
+
+        frame.setVisible(true);
+    }
 
     static class NodoExpresion {
         String dato;
@@ -23,21 +57,20 @@ public class CalculadoraServidor {
             this.raiz = null;
         }
 
+        private boolean esOperador(String token) {
+            return "+-*/%&|^~()**".contains(token);
+        }
+
         // Función para construir el árbol a partir de una expresión en notación postfija
         public void construirDesdePostfija(String postfija) {
             Stack<NodoExpresion> pila = new Stack<>();
-            String[] tokens = postfija.split(" "); // Separamos por espacio
+            String[] tokens = postfija.split(" ");
 
             for (String token : tokens) {
                 if (esOperador(token)) {
                     NodoExpresion nodo = new NodoExpresion(token);
-                    if (token.equals("~")) { // Si es el operador NOT
-                        nodo.derecho = (pila.isEmpty()) ? null : pila.pop();
-                        nodo.izquierdo = null;
-                    } else {
-                        nodo.derecho = (pila.isEmpty()) ? null : pila.pop();
-                        nodo.izquierdo = (pila.isEmpty()) ? null : pila.pop();
-                    }
+                    nodo.derecho = (pila.isEmpty()) ? null : pila.pop();
+                    nodo.izquierdo = (pila.isEmpty()) ? null : pila.pop();
                     pila.push(nodo);
                 } else {
                     pila.push(new NodoExpresion(token));
@@ -46,56 +79,24 @@ public class CalculadoraServidor {
             this.raiz = pila.pop();
         }
 
-        private boolean esOperador(String token) {
-            return "+-*/%&|^~".contains(token);
-        }
-
 
         // Función para evaluar el árbol
         public double evaluar() {
             return evaluarRecursivo(raiz);
         }
+
         protected double evaluarRecursivo(NodoExpresion nodo) {
-            // Este método lo redefiniremos en las clases hijas para tener comportamientos específicos
             return 0.0;
         }
-//        private double evaluarRecursivo(NodoExpresion nodo) {
-//            if (nodo == null) return 0;
-//
-//            if (nodo.izquierdo == null && nodo.derecho == null) {
-//                return Double.parseDouble(nodo.dato);
-//            }
-//
-//            double izquierdo = evaluarRecursivo(nodo.izquierdo);
-//            double derecho = evaluarRecursivo(nodo.derecho);
-//
-//            switch (nodo.dato.charAt(0)) {
-//                case '+':
-//                    return izquierdo + derecho;
-//                case '-':
-//                    return izquierdo - derecho;
-//                case '*':
-//                    if (nodo.dato.length() > 1 && nodo.dato.equals("**")) {
-//                        return Math.pow(izquierdo, derecho);
-//                    }
-//                    return izquierdo * derecho;
-//                case '/':
-//                    return izquierdo / derecho;
-//                case '%':
-//                    return izquierdo % derecho;
-//                case '&':
-//                    return (int) izquierdo & (int) derecho;
-//                case '|':
-//                    return (int) izquierdo | (int) derecho;
-//                case '^':
-//                    return (int) izquierdo ^ (int) derecho;
-//                case '~':
-//                    return ~(int) izquierdo; // Considerando que es un operador unario
-//            }
-//            return 0;  // Esto debería manejarse mejor, tal vez lanzando una excepción
-//        }
     }
+
     static class ArbolAlgebraico extends ArbolExpresion {
+        private StringBuilder trazabilidad;
+
+        public ArbolAlgebraico() {
+            this.trazabilidad = new StringBuilder();
+        }
+
         @Override
         protected double evaluarRecursivo(NodoExpresion nodo) {
             if (nodo == null) return 0;
@@ -107,13 +108,16 @@ public class CalculadoraServidor {
             double izquierdo = evaluarRecursivo(nodo.izquierdo);
             double derecho = evaluarRecursivo(nodo.derecho);
 
+            trazabilidad.append("paso ").append(trazabilidad.toString().split("\n").length).append(": ");
+            trazabilidad.append("(").append(izquierdo).append(" ").append(nodo.dato).append(" ").append(derecho).append(")").append("\n");
+
             switch (nodo.dato.charAt(0)) {
                 case '+':
                     return izquierdo + derecho;
                 case '-':
                     return izquierdo - derecho;
                 case '*':
-                    if (nodo.dato.length() > 1 && nodo.dato.equals("**")) {
+                    if ("**".equals(nodo.dato)) {
                         return Math.pow(izquierdo, derecho);
                     }
                     return izquierdo * derecho;
@@ -124,7 +128,13 @@ public class CalculadoraServidor {
             }
             throw new IllegalArgumentException("Operador no soportado: " + nodo.dato);
         }
+
+        public String getTrazabilidad() {
+            return trazabilidad.toString();
+        }
     }
+
+
     static class ArbolLogico extends ArbolExpresion {
         @Override
         protected double evaluarRecursivo(NodoExpresion nodo) {
@@ -136,34 +146,26 @@ public class CalculadoraServidor {
 
             double izquierdo = evaluarRecursivo(nodo.izquierdo);
             double derecho = evaluarRecursivo(nodo.derecho);
-            System.out.println("Nodo actual: " + nodo.dato);
-            System.out.println("Izquierdo: " + izquierdo);
-            System.out.println("Derecho: " + derecho);
 
-            switch (nodo.dato.charAt(0)) {
-                case '&':
+            if (izquierdo != 0.0 && izquierdo != 1.0) {
+                throw new IllegalArgumentException("Operaciones lógicas solo permitidas con 0 y 1.");
+            }
+            if (derecho != 0.0 && derecho != 1.0) {
+                throw new IllegalArgumentException("Operaciones lógicas solo permitidas con 0 y 1.");
+            }
+
+            switch (nodo.dato) {
+                case "&":
                     return (int) izquierdo & (int) derecho;
-                case '|':
+                case "|":
                     return (int) izquierdo | (int) derecho;
-                case '^':
+                case "^":
                     return (int) izquierdo ^ (int) derecho;
-                case '~':
-                    return (double) ~(int) derecho; // Inversión de bits y luego convertir a double
+                case "~":
+                    return (derecho == 1) ? 0 : 1;
+                default:
+                    throw new IllegalArgumentException("Operador no soportado: " + nodo.dato);
             }
-            return 0;
-        }
-    }
-
-    public static void main(String[] args) {
-        try (ServerSocket serverSocket = new ServerSocket(PUERTO)) {
-            System.out.println("Servidor iniciado en el puerto " + PUERTO);
-
-            while (true) {
-                Socket clienteSocket = serverSocket.accept();
-                new Thread(new ClienteHandler(clienteSocket)).start();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
@@ -173,6 +175,26 @@ public class CalculadoraServidor {
         public ClienteHandler(Socket socket) {
             this.clienteSocket = socket;
         }
+
+        private int prioridad(char operador) {
+            switch (operador) {
+                case '+':
+                case '-':
+                    return 1;
+                case '*':
+                case '/':
+                case '%':
+                    return 2;
+                case '^':
+                    return 3;
+                case '&':
+                case '|':
+                case '~':
+                    return 4;
+            }
+            return -1;
+        }
+
         @Override
         public void run() {
             try (BufferedReader entrada = new BufferedReader(new InputStreamReader(clienteSocket.getInputStream()));
@@ -195,19 +217,18 @@ public class CalculadoraServidor {
                 System.out.println("Registrando en el CSV: " + expresion + ", " + resultado);
                 registrarEnCSV(expresion, String.valueOf(resultado));
 
-
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+
         private double evaluarExpresion(String expresion) {
-            System.out.println("Convirtiendo expresión a postfija...");
+            textAreaLog.append("Convirtiendo expresión a postfija...\\n");
             String postfija = convertirApostfija(expresion);
-            System.out.println("Expresión postfija: " + postfija);
+            textAreaLog.append("Expresión postfija: " + postfija + "\\n");
 
             ArbolExpresion arbol;
 
-            // Decidir qué tipo de árbol usar según la expresión
             if (expresion.contains("&") || expresion.contains("|") || expresion.contains("^") || expresion.contains("~")) {
                 arbol = new ArbolLogico();
             } else {
@@ -215,21 +236,27 @@ public class CalculadoraServidor {
             }
 
             arbol.construirDesdePostfija(postfija);
-            double result = arbol.evaluar();
-            System.out.println("Resultado de evaluar el árbol: " + result);
-            return result;
+            try {
+                double result = arbol.evaluar();
+                if (arbol instanceof ArbolAlgebraico) {
+                    System.out.println(((ArbolAlgebraico) arbol).getTrazabilidad());
+                }
+                textAreaLog.append("Resultado de evaluar el árbol: " + result + "\n");
+                return result;
+            } catch (IllegalArgumentException e) {
+                textAreaLog.append(e.getMessage() + "\\n");
+                throw e;
+            }
         }
-
-
 
         private boolean esEntradaValida(String expresion) {
             boolean contieneOperadoresLogicos = expresion.contains("&") || expresion.contains("|") || expresion.contains("^") || expresion.contains("~");
             boolean contieneOperadoresAlgebraicos = expresion.contains("+") || expresion.contains("-") || expresion.contains("*") || expresion.contains("/") || expresion.contains("%") || expresion.contains("**");
 
             if (contieneOperadoresLogicos && contieneOperadoresAlgebraicos) {
-                return false;  // La expresión contiene ambos tipos de operadores, lo cual es inválido
+                return false;
             }
-            return true;  // La expresión es válida
+            return true;
         }
 
         private void registrarEnCSV(String expresion, String resultado) {
@@ -247,60 +274,44 @@ public class CalculadoraServidor {
         }
 
         private String convertirApostfija(String infija) {
-            System.out.println("Convirtiendo expresión a notación postfija: " + infija);
-            StringBuilder postfija = new StringBuilder();
+            StringBuilder postfijaBuilder = new StringBuilder();
+            Queue<String> postfija = new LinkedList<>();
             Stack<Character> pila = new Stack<>();
 
             for (int i = 0; i < infija.length(); i++) {
                 char c = infija.charAt(i);
 
-                if (Character.isDigit(c)) {
-                    // Manejar números de múltiples dígitos
+                if (Character.isDigit(c) || c == '.') {
+                    StringBuilder numero = new StringBuilder();
                     while (i < infija.length() && (Character.isDigit(infija.charAt(i)) || infija.charAt(i) == '.')) {
-                        postfija.append(infija.charAt(i++));
+                        numero.append(infija.charAt(i++));
                     }
-                    postfija.append(" "); // Agregamos un espacio como separador
-                    i--; // Ajuste para el bucle principal
-                } else if (c == '+' || c == '-') {
-                    while (!pila.isEmpty() && (pila.peek() == '*' || pila.peek() == '/' || pila.peek() == '+' || pila.peek() == '-' || pila.peek() == '%' || pila.peek() == '&' || pila.peek() == '|' || pila.peek() == '^')) {
-                        postfija.append(pila.pop());
-                    }
-                    pila.push(c);
-                } else if (c == '*' || c == '/' || c == '%' || c == '&' || c == '|' || c == '^') {
-                    if (c == '*' && i + 1 < infija.length() && infija.charAt(i + 1) == '*') { // Para manejar el operador **
-                        postfija.append("** ");
-                        i++; // Saltar el siguiente asterisco
-                    } else {
-                        while (!pila.isEmpty() && (pila.peek() == '*' || pila.peek() == '/' || pila.peek() == '%')) {
-                            postfija.append(pila.pop());
-                        }
-                        pila.push(c);
-                    }
+                    postfija.add(numero.toString());
+                    i--;
                 } else if (c == '(') {
                     pila.push(c);
                 } else if (c == ')') {
                     while (!pila.isEmpty() && pila.peek() != '(') {
-                        postfija.append(pila.pop());
+                        postfija.add(String.valueOf(pila.pop()));
                     }
-                    pila.pop();  // Remover '// ('
-                } else if (c == '~') {
-                    while (i + 1 < infija.length() && (Character.isDigit(infija.charAt(i + 1)) || infija.charAt(i + 1) == '.')) {
-                        postfija.append(infija.charAt(++i));
+                    if (!pila.isEmpty()) pila.pop(); // Eliminar el paréntesis de apertura '('
+                } else {
+                    while (!pila.isEmpty() && prioridad(pila.peek()) >= prioridad(c)) {
+                        postfija.add(String.valueOf(pila.pop()));
                     }
-                    postfija.append(" "); // Agregamos un espacio como separador
-                    postfija.append(c);   // Añade el operador ~ después del número
-                    postfija.append(" "); // Añade otro espacio
+                    pila.push(c);
                 }
             }
 
-
             while (!pila.isEmpty()) {
-                postfija.append(pila.pop());
+                postfija.add(String.valueOf(pila.pop()));
             }
 
-            String resultado = postfija.toString().trim();
-            System.out.println("Resultado de conversión a postfija: " + resultado);
-            return resultado;
+            while (!postfija.isEmpty()) {
+                postfijaBuilder.append(postfija.poll()).append(' ');
+            }
+
+            return postfijaBuilder.toString().trim();
         }
     }
 }

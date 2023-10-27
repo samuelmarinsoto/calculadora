@@ -41,8 +41,8 @@ public class ClienteGUI {
         btnEvaluar.addActionListener(e -> enviarExpresion());
         algebraicPanel.add(btnEvaluar, BorderLayout.SOUTH);
 
-        JPanel algebraicButtonsPanel = new JPanel(new GridLayout(4, 4));
-        String[] algebraicButtons = {"7", "8", "9", "+", "4", "5", "6", "-", "1", "2", "3", "*", "0", "/", "%", "**"};
+        JPanel algebraicButtonsPanel = new JPanel(new GridLayout(5, 4));  // Aumentamos a 5 filas
+        String[] algebraicButtons = {"7", "8", "9", "+", "4", "5", "6", "-", "1", "2", "3", "*", "/", "(", ")", "**", "0", "00", "000", "%"};  // Agregamos 0 y )
         for (String text : algebraicButtons) {
             JButton button = new JButton(text);
             button.setBackground(Color.BLACK);
