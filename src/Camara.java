@@ -10,18 +10,21 @@ import java.io.File;
 public class Camara {
 
     static {
-        OpenCV.loadShared();
+System.load("C:\\Users\\Isaac\\Downloads\\opencv\\build\\java\\x64\\opencv_java480.dll");
     }
 
     public String captureAndRecognize() {
         VideoCapture camera = new VideoCapture(0);
-        if (!camera.isOpened()) {
-            System.out.println("Error: Camera not found!");
-            return "Camera Error!";
-        }
+       if (!camera.isOpened()) {
+        System.out.println("Error: Camera not found!");
+        return "Camera Error!";
+    } else {
+        System.out.println("Camera opened successfully!");
+    }
 
-        camera.set(Videoio.CAP_PROP_FRAME_WIDTH, 640);
-        camera.set(Videoio.CAP_PROP_FRAME_HEIGHT, 480);
+
+//        camera.set(Videoio.CAP_PROP_FRAME_WIDTH, 640);
+//        camera.set(Videoio.CAP_PROP_FRAME_HEIGHT, 480);
 
         Mat frame = new Mat();
 
@@ -32,6 +35,7 @@ public class Camara {
 
         while (true) {
             if (camera.read(frame)) {
+                System.out.println("Frame captured successfully!");
                 org.opencv.highgui.HighGui.imshow(windowName, frame);
                 char key = (char) org.opencv.highgui.HighGui.waitKey(20);
                 if (key == 'c' || key == 'C') {
@@ -45,6 +49,8 @@ public class Camara {
                     ocrResult = "Capture cancelled.";
                     break;
                 }
+            } else {
+                System.out.println("Failed to capture frame!");
             }
         }
 

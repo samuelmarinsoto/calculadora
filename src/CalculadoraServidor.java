@@ -6,10 +6,19 @@ import java.util.Date;
 import java.util.Stack;
 import java.util.LinkedList;
 import java.util.Queue;
+import com.mxgraph.layout.mxCircleLayout;
+import com.mxgraph.layout.mxIGraphLayout;
+import com.mxgraph.swing.mxGraphComponent;
+import com.mxgraph.view.mxGraph;
+import org.jgrapht.*;
+import org.jgrapht.ext.*;
+import org.jgrapht.graph.*;
+
 public class CalculadoraServidor {
     private static final int PUERTO = 8080;
     private static JTextArea textAreaLog;  // Área de registro para mostrar el análisis
-
+    private static mxGraphComponent treeVisualizer;
+    private static JFrame frame;
     public static void main(String[] args) {
         // Inicializando la GUI
         initGUI();
@@ -27,7 +36,8 @@ public class CalculadoraServidor {
     }
 
     private static void initGUI() {
-        JFrame frame = new JFrame("Servidor - Análisis de Árbol de Expresión");
+        mxGraphComponent treeVisualizer;
+        frame = new JFrame("Servidor - Análisis de Árbol de Expresión");
         frame.setSize(600, 400);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
@@ -38,6 +48,8 @@ public class CalculadoraServidor {
         frame.add(scrollPane, BorderLayout.CENTER);
 
         frame.setVisible(true);
+        treeVisualizer = new mxGraphComponent(new mxGraph());
+        frame.add(treeVisualizer, BorderLayout.SOUTH);
     }
 
     static class NodoExpresion {
@@ -93,6 +105,34 @@ public class CalculadoraServidor {
 
         protected double evaluarRecursivo(NodoExpresion nodo) {
             return 0.0;
+        }
+
+        public Graph<NodoExpresion, DefaultEdge> convertirAGrafo() {
+            Graph<NodoExpresion, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
+            agregarNodoAGrafo(this.raiz, graph);
+            return graph;
+        }
+
+        private void agregarNodoAGrafo(NodoExpresion nodo, Graph<NodoExpresion, DefaultEdge> graph) {
+            if (nodo == null) return;
+            graph.addVertex(nodo);
+            if (nodo.izquierdo != null) {
+                graph.addVertex(nodo.izquierdo);
+                graph.addEdge(nodo, nodo.izquierdo);
+                agregarNodoAGrafo(nodo.izquierdo, graph);
+            }
+            if (nodo.derecho != null) {
+                graph.addVertex(nodo.derecho);
+                graph.addEdge(nodo, nodo.derecho);
+                agregarNodoAGrafo(nodo.derecho, graph);
+            }
+        }
+        public mxGraphComponent visualizar() {
+            Graph<NodoExpresion, DefaultEdge> g = convertirAGrafo();
+            JGraphXAdapter<NodoExpresion, DefaultEdge> graphAdapter = new JGraphXAdapter<>(g);
+            mxIGraphLayout layout = new mxCircleLayout(graphAdapter);
+            layout.execute(graphAdapter.getDefaultParent());
+            return new mxGraphComponent(graphAdapter);
         }
     }
 
