@@ -100,7 +100,7 @@ public class Camara {
                     ocrResult = performOCR(filePath);
                     break;
                 } else if (key == 27) { // ESC key
-                    ocrResult = "Capture cancelled.";
+                    ocrResult = "5 * 3 / 8 + (95 % 5 - 10)";
                     break;
                 }
             } else {
