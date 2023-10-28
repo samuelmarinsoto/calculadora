@@ -100,14 +100,9 @@ public class ClienteGUI {
 
         // codigo que crea boton para la camara y que cuando termine retorne el string que logro interceptar
         // ver Camara.java
-        IntegratedCamera camara = new IntegratedCamera();
+        Camara camara = new Camara();
         JButton btnCamera = new JButton("Cámara");
-        btnCamera.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                enviarExpresionCamara(camara.captureAndRecognize());
-            }
-        });
+
 //        btnCamera.addActionListener( e -> enviarExpresionCamara(camara.captureAndRecognize()));
         buttonsPanel.add(btnCamera);
         btnCamera.setBackground(Color.BLACK);
