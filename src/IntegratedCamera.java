@@ -12,11 +12,11 @@ public class IntegratedCamera {
         System.load("C:\\Users\\Isaac\\Downloads\\opencv\\build\\java\\x64\\opencv_java480.dll");
     }
 
-    public static String captureAndRecognize() {
+    public static void main(String[] args) {
         VideoCapture camera = new VideoCapture(0);
         if (!camera.isOpened()) {
             System.out.println("Error: Camera not found!");
-            return "Camera Error!";
+            return;
         } else {
             System.out.println("Camera opened successfully!");
         }
@@ -50,8 +50,6 @@ public class IntegratedCamera {
 
         camera.release();
         HighGui.destroyAllWindows();
-
-        return ocrResult;
     }
 
     private static String performOCR(String filePath) {
