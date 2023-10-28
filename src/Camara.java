@@ -100,7 +100,7 @@ public class Camara {
 
     private String performOCR(String filePath) {
         ITesseract instance = new Tesseract();
-        instance.setDatapath(""); // Replace with the path to your tessdata directory
+        instance.setDatapath("."); // Replace with the path to your tessdata directory
         instance.setLanguage("equ"); // Set the language as English. Modify if needed.
 
         try {
