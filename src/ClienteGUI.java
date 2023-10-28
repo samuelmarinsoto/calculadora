@@ -102,6 +102,12 @@ public class ClienteGUI {
         // ver Camara.java
         IntegratedCamera camara = new IntegratedCamera();
         JButton btnCamera = new JButton("Cámara");
+        btnCamera.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                enviarExpresionCamara(camara.captureAndRecognize());
+            }
+        });
 //        btnCamera.addActionListener( e -> enviarExpresionCamara(camara.captureAndRecognize()));
         buttonsPanel.add(btnCamera);
         btnCamera.setBackground(Color.BLACK);
