@@ -14,6 +14,8 @@ public class ClienteGUI {
     private JButton btnEvaluar;
 
     public static void main(String[] args) {
+//        IntegratedCamera camara = new IntegratedCamera();
+//        camara.captureAndRecognize();
         System.out.println( 5 * 3 / 8 + (95 % 5 - 10));
         EventQueue.invokeLater(() -> {
             try {
@@ -98,7 +100,7 @@ public class ClienteGUI {
 
         // codigo que crea boton para la camara y que cuando termine retorne el string que logro interceptar
         // ver Camara.java
-        Camara camara = new Camara();
+        IntegratedCamera camara = new IntegratedCamera();
         JButton btnCamera = new JButton("Cámara");
         btnCamera.addActionListener( e -> enviarExpresionCamara(camara.captureAndRecognize()));
         buttonsPanel.add(btnCamera);
