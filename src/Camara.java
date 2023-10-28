@@ -1,3 +1,4 @@
+import nu.pattern.OpenCV;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.videoio.VideoCapture;
@@ -9,7 +10,7 @@ import java.io.File;
 public class Camara {
 
     static {
-        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+        OpenCV.loadShared();
     }
 
     public String captureAndRecognize() {
