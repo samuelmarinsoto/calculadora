@@ -7,14 +7,14 @@ import java.net.Socket;
 public class ClienteGUI {
 
     private JFrame frame;
-    private JTextField textFieldExpresionAlgebraica;
-    private JTextField textFieldExpresionLogica;
+    private JTextField textFieldExpresion;
     private JTextArea textAreaResultado;
     private static final String SERVER_ADDRESS = "localhost";
     private static final int SERVER_PORT = 8080;
     private JButton btnEvaluar;
 
     public static void main(String[] args) {
+        System.out.println( 5 * 3 / 8 + (95 % 5 - 10));
         EventQueue.invokeLater(() -> {
             try {
                 ClienteGUI window = new ClienteGUI();
@@ -34,28 +34,28 @@ public class ClienteGUI {
         JPanel algebraicPanel = new JPanel();
         algebraicPanel.setBorder(BorderFactory.createTitledBorder("Algebraica"));
         algebraicPanel.setLayout(new BorderLayout());
-        textFieldExpresionAlgebraica = new JTextField();
-        algebraicPanel.add(textFieldExpresionAlgebraica, BorderLayout.NORTH);
+        textFieldExpresion = new JTextField();
+        algebraicPanel.add(textFieldExpresion, BorderLayout.NORTH);
 
-
+        JPanel algebraicButtonsPanel = new JPanel(new GridLayout(5, 4));
+        String[] algebraicButtons = {"7", "8", "9", "+", "4", "5", "6", "-", "1", "2", "3", "*", "/", "(", ")", "**", "0", "00", "000", "%"};
+        for (String text : algebraicButtons) {
+            JButton button = new JButton(text);
+            button.setBackground(Color.BLACK);
+            button.setForeground(Color.WHITE);
+            button.addActionListener(e -> textFieldExpresion.setText(textFieldExpresion.getText() + text));
+            algebraicButtonsPanel.add(button);
+        }
+        algebraicPanel.add(algebraicButtonsPanel, BorderLayout.CENTER);
 
         btnEvaluar = new JButton("Evaluar");
         btnEvaluar.addActionListener(e -> enviarExpresion());
         algebraicPanel.add(btnEvaluar, BorderLayout.SOUTH);
 
-        JPanel algebraicButtonsPanel = new JPanel(new GridLayout(5, 4));  // Aumentamos a 5 filas
-        String[] algebraicButtons = {"7", "8", "9", "+", "4", "5", "6", "-", "1", "2", "3", "*", "/", "(", ")", "**", "0", "00", "000", "%"};  // Agregamos 0 y )
-        for (String text : algebraicButtons) {
-            JButton button = new JButton(text);
-            button.setBackground(Color.BLACK);
-            button.setForeground(Color.WHITE);
-            button.addActionListener(e -> textFieldExpresionAlgebraica.setText(textFieldExpresionAlgebraica.getText() + text));
-            algebraicButtonsPanel.add(button);
-        }
-        algebraicPanel.add(algebraicButtonsPanel, BorderLayout.CENTER);
-        // Logic section input
-        textFieldExpresionLogica = new JTextField();
-        algebraicPanel.add(textFieldExpresionLogica, BorderLayout.SOUTH);
+
+//        // Logic section input
+//        textFieldExpresionLogica = new JTextField();
+//        algebraicPanel.add(textFieldExpresionLogica, BorderLayout.CENTER);  // Use CENTER to avoid overlap
 
         btnEvaluar = new JButton("Evaluar");
         btnEvaluar.addActionListener(e -> enviarExpresion());
@@ -63,19 +63,27 @@ public class ClienteGUI {
         // Logical section
         JPanel logicPanel = new JPanel();
         logicPanel.setBorder(BorderFactory.createTitledBorder("Lógica"));
-        logicPanel.setLayout(new GridLayout(3, 2));
+        logicPanel.setLayout(new BorderLayout());
 
+
+
+        // Buttons for logical operations
+        JPanel logicButtonsPanel = new JPanel(new GridLayout(3, 2));
         String[] logicButtons = {"AND (&)", "OR (|)", "XOR (^)", "NOT (~)", "1", "0"};
         String[] logicSymbols = {"&", "|", "^", "~", "1", "0"};
         for (int i = 0; i < logicButtons.length; i++) {
             String text = logicButtons[i];
             String symbol = logicSymbols[i];
             JButton button = new JButton(text);
-            button.addActionListener(e -> textFieldExpresionLogica.setText(textFieldExpresionLogica.getText() + symbol));
+            button.addActionListener(e -> textFieldExpresion.setText(textFieldExpresion.getText() + symbol));
             button.setForeground(Color.white);
             button.setBackground(Color.black);
-            logicPanel.add(button);
+            logicButtonsPanel.add(button);
         }
+
+        // Adding the buttons to the center of the logical panel
+        logicPanel.add(logicButtonsPanel, BorderLayout.CENTER);
+
 
      // History and camera section
         JPanel historyCameraPanel = new JPanel();
@@ -111,11 +119,8 @@ public class ClienteGUI {
     private void enviarExpresion() {
         // Determine from which textField the expression is coming from (Algebraic or Logic)
         String expresion;
-        if (!textFieldExpresionAlgebraica.getText().isEmpty()) {
-            expresion = "ALGEBRAIC:" + textFieldExpresionAlgebraica.getText();
-        } else {
-            expresion = "LOGIC:" + textFieldExpresionLogica.getText();
-        }
+        expresion = textFieldExpresion.getText();
+
 
         try (Socket socket = new Socket(SERVER_ADDRESS, SERVER_PORT);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);

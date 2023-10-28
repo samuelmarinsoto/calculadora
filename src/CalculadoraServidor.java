@@ -300,55 +300,57 @@ public class CalculadoraServidor {
             }
 
             private String convertirApostfija(String infija) {
-                StringBuilder postfijaBuilder = new StringBuilder();
-                Queue<String> postfija = new LinkedList<>();
-                Stack<Character> pila = new Stack<>();
-                for (int i = 0; i < infija.length(); i++) {
-                    char c = infija.charAt(i);
+            StringBuilder postfijaBuilder = new StringBuilder();
+            Queue<String> postfija = new LinkedList<>();
+            Stack<Character> pila = new Stack<>();
+            for (int i = 0; i < infija.length(); i++) {
+                char c = infija.charAt(i);
 
-                    if (Character.isDigit(c) || c == '.') {
-                        StringBuilder numero = new StringBuilder();
-                        while (i < infija.length() && (Character.isDigit(infija.charAt(i)) || infija.charAt(i) == '.')) {
-                            numero.append(infija.charAt(i++));
-                        }
-                        postfija.add(numero.toString());
-                        i--;
-                    } else if (c == '(') {
-                        pila.push(c);
-                    } else if (c == ')') {
-                        while (!pila.isEmpty() && pila.peek() != '(') {
+                if (Character.isWhitespace(c)) {  // Ignorar espacios
+                    continue;
+                }
+
+                if (Character.isDigit(c) || c == '.') {
+                    StringBuilder numero = new StringBuilder();
+                    while (i < infija.length() && (Character.isDigit(infija.charAt(i)) || infija.charAt(i) == '.')) {
+                        numero.append(infija.charAt(i++));
+                    }
+                    postfija.add(numero.toString());
+                    i--;
+                } else if (c == '(') {
+                    pila.push(c);
+                } else if (c == ')') {
+                    while (!pila.isEmpty() && pila.peek() != '(') {
+                        postfija.add(String.valueOf(pila.pop()));
+                    }
+                    if (!pila.isEmpty()) pila.pop();
+                } else {
+                    if (c == '*' && i + 1 < infija.length() && infija.charAt(i + 1) == '*') {
+                        i++;
+                        pila.push('^');
+                    } else {
+                        while (!pila.isEmpty() && prioridad(pila.peek()) >= prioridad(c)) {
                             postfija.add(String.valueOf(pila.pop()));
                         }
-                        if (!pila.isEmpty()) pila.pop();
-                    } else {
-                        // Detectar el operador **
-                       if (c == '*' && i + 1 < infija.length() && infija.charAt(i + 1) == '*') {
-                            i++;  // Saltar el próximo '*'
-                            pila.push('^');  // Usamos '^' para representar la potencia en la pila.
-                        }else {
-                            while (!pila.isEmpty() && prioridad(pila.peek()) >= prioridad(c)) {
-                                postfija.add(String.valueOf(pila.pop()));
-                            }
-                            pila.push(c);
-                        }
+                        pila.push(c);
                     }
                 }
-                while (!pila.isEmpty()) {
-                    char operador = pila.pop();
-                    if (operador == '^') {
-                        postfija.add("**");
-                    } else {
-                        postfija.add(String.valueOf(operador));
-                    }
-                }
-
-
-                while (!postfija.isEmpty()) {
-                    postfijaBuilder.append(postfija.poll()).append(' ');
-                }
-
-                return postfijaBuilder.toString().trim();
             }
+            while (!pila.isEmpty()) {
+                char operador = pila.pop();
+                if (operador == '^') {
+                    postfija.add("**");
+                } else {
+                    postfija.add(String.valueOf(operador));
+                }
+            }
+
+            while (!postfija.isEmpty()) {
+                postfijaBuilder.append(postfija.poll()).append(' ');
+            }
+
+            return postfijaBuilder.toString().trim();
+        }
 
 
     }
