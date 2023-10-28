@@ -40,10 +40,10 @@ public class Camara {
         frame.add(captureButton);
         frame.add(textArea);
 
-        Camara camara = new Camara();
         captureButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                Camara camara = new Camara();
                 String recognizedText = camara.captureAndRecognize();
                 String texto_resultado = camara.enviarExpresionCamara(recognizedText);
                 textArea.setText(texto_resultado);
