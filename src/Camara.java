@@ -63,8 +63,8 @@ public class Camara {
     }
 
 
-//        camera.set(Videoio.CAP_PROP_FRAME_WIDTH, 640);
-//        camera.set(Videoio.CAP_PROP_FRAME_HEIGHT, 480);
+        camera.set(Videoio.CAP_PROP_FRAME_WIDTH, 640);
+        camera.set(Videoio.CAP_PROP_FRAME_HEIGHT, 480);
 
         Mat frame = new Mat();
 
