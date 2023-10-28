@@ -14,11 +14,19 @@ import org.jgrapht.*;
 import org.jgrapht.ext.*;
 import org.jgrapht.graph.*;
 
+/**
+ * Clase servidor
+ */
 public class CalculadoraServidor {
     private static final int PUERTO = 8080;
     private static JTextArea textAreaLog;  // Área de registro para mostrar el análisis
     private static mxGraphComponent treeVisualizer;
     private static JFrame frame;
+
+    /**
+     * funcion principal de servidor, lo inicia
+     * @param args
+     */
     public static void main(String[] args) {
         // Inicializando la GUI
         initGUI();
@@ -35,6 +43,9 @@ public class CalculadoraServidor {
         }
     }
 
+    /**
+     * funcion que inicia GUI de srvidor y muestra el arbol de expresion
+     */
     private static void initGUI() {
         mxGraphComponent treeVisualizer;
         frame = new JFrame("Servidor - Análisis de Árbol de Expresión");
@@ -52,6 +63,9 @@ public class CalculadoraServidor {
         frame.add(treeVisualizer, BorderLayout.SOUTH);
     }
 
+    /**
+     * clase nodo para almacenar los datos en el arbol
+     */
     static class NodoExpresion {
         String dato;
         NodoExpresion izquierdo, derecho;
@@ -62,6 +76,9 @@ public class CalculadoraServidor {
         }
     }
 
+    /**
+     * Clase del arbol de expresion. aqui se guardan los datos. ver documentacion externa
+     */
     static class ArbolExpresion {
         NodoExpresion raiz;
 
@@ -69,12 +86,20 @@ public class CalculadoraServidor {
             this.raiz = null;
         }
 
+        /**
+         * funcion que checkea si el elemento es un operador
+         * @param token elemento a cheakear
+         * @return booleano verdadero o falso
+         */
         private boolean esOperador(String token) {
             return "+-*/%&|^~()**".contains(token) || "**".equals(token);
         }
 
 
-        // Función para construir el árbol a partir de una expresión en notación postfija
+        /**
+         * Función para construir el árbol a partir de una expresión en notación postfija
+         * @param postfija expresion posfija
+         */
         public void construirDesdePostfija(String postfija) {
             Stack<NodoExpresion> pila = new Stack<>();
             String[] tokens = postfija.split(" ");
@@ -97,8 +122,10 @@ public class CalculadoraServidor {
         }
 
 
-
-        // Función para evaluar el árbol
+        /**
+         *  Función para evaluar el árbol
+         * @return resultado
+         */
         public double evaluar() {
             return evaluarRecursivo(raiz);
         }
@@ -136,6 +163,9 @@ public class CalculadoraServidor {
         }
     }
 
+    /**
+     * clase de arbol algebraico
+     */
     static class ArbolAlgebraico extends ArbolExpresion {
         private StringBuilder trazabilidad;
 
@@ -143,6 +173,11 @@ public class CalculadoraServidor {
             this.trazabilidad = new StringBuilder();
         }
 
+        /**
+         * funcion de evaluacion recursiva. va a recorrer el arbol recursivamente para evaluarlo
+         * @param nodo raiz del arbol a evaluar
+         * @return resultado
+         */
         @Override
         protected double evaluarRecursivo(NodoExpresion nodo) {
             if (nodo == null) return 0;
@@ -190,8 +225,16 @@ public class CalculadoraServidor {
         }
     }
 
-
+    /**
+     * Clase de arbol logico
+     */
     static class ArbolLogico extends ArbolExpresion {
+
+        /**
+         * funcion de evaluacion recursiva para el arbol logico
+         * @param nodo raiz del arbol
+         * @return valor de verdad del arbol
+         */
         @Override
         protected double evaluarRecursivo(NodoExpresion nodo) {
             if (nodo == null) return 0;
@@ -225,6 +268,9 @@ public class CalculadoraServidor {
         }
     }
 
+    /**
+     * clase que implementa al servidor
+     */
     private static class ClienteHandler implements Runnable {
             private Socket clienteSocket;
 
@@ -232,6 +278,11 @@ public class CalculadoraServidor {
                 this.clienteSocket = socket;
             }
 
+        /**
+         * funcion que evalua precedencia de operador
+         * @param operador operador a evaluar
+         * @return valor de precedencia (entero) de operador
+         */
             private int prioridad(char operador) {
                 switch (operador) {
                     case '+':
@@ -251,7 +302,10 @@ public class CalculadoraServidor {
                 return -1;
             }
 
-            @Override
+        /**
+         * funcoin que corre todo el servidor
+         */
+        @Override
             public void run() {
                 try (BufferedReader entrada = new BufferedReader(new InputStreamReader(clienteSocket.getInputStream()));
                      PrintWriter salida = new PrintWriter(clienteSocket.getOutputStream(), true)) {
@@ -280,6 +334,11 @@ public class CalculadoraServidor {
                 }
             }
 
+        /**
+         * funcion que evalua expresion desde el servidor
+         * @param expresion expresion por evaluar
+         * @return resultado
+         */
             private double evaluarExpresion(String expresion) {
                 textAreaLog.append("Convirtiendo expresión a postfija...\\n");
                 String postfija = convertirApostfija(expresion);
@@ -315,6 +374,11 @@ public class CalculadoraServidor {
                 }
             }
 
+        /**
+         * funcion que checkea si una expresion es valida
+         * @param expresion expresion a evaluar
+         * @return booleano verdadero o falso
+         */
             private boolean esEntradaValida(String expresion) {
                 boolean contieneOperadoresLogicos = expresion.contains("&") || expresion.contains("|") || (expresion.contains("^") && !expresion.contains("**")) || expresion.contains("~");
                 boolean contieneOperadoresAlgebraicos = expresion.contains("+") || expresion.contains("-") || expresion.contains("*") || expresion.contains("/") || expresion.contains("%") || expresion.contains("**");
@@ -325,6 +389,11 @@ public class CalculadoraServidor {
                 return true;
             }
 
+        /**
+         * funcion que registra historial de calculadora en un csv
+         * @param expresion expresion utilizado
+         * @param resultado valor de expresion
+         */
             private void registrarEnCSV(String expresion, String resultado) {
                 String archivo = "operaciones.csv";
                 try (FileWriter fw = new FileWriter(archivo, true);
@@ -339,6 +408,11 @@ public class CalculadoraServidor {
                 }
             }
 
+        /**
+         * funcion que convierte una expresion en formato infijo a posfijo para que se pueda meter en un arbol
+         * @param infija exporesion infija a convertir
+         * @return expresion posfija
+         */
             private String convertirApostfija(String infija) {
             StringBuilder postfijaBuilder = new StringBuilder();
             Queue<String> postfija = new LinkedList<>();

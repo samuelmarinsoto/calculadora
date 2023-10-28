@@ -15,6 +15,9 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.core.Core;
 import net.sourceforge.tess4j.Tesseract;
 
+/**
+ * clase camara
+ */
 public class Camara {
 
     private static final String SERVER_ADDRESS = "localhost";
@@ -25,6 +28,11 @@ public class Camara {
 
     }
 
+    /**
+     * funcion principal. crea una ventana en donde se muestra el resultado de la expresion,
+     * despues de que se escanea y evalua la expresion tomada por la camara
+     * @param args
+     */
     public static void main(String[] args) {
         JFrame frame = new JFrame("Camera OCR");
         frame.setSize(400, 300);
@@ -50,6 +58,11 @@ public class Camara {
         frame.setVisible(true);
     }
 
+    /**
+     * expresion que crea una camara para escanear expresion,
+     * y retorna string escaneado
+     * @return String de la expresion escaneada
+     */
     public String captureAndRecognize() {
         VideoCapture camera = new VideoCapture(0);
         if (!camera.isOpened()) {
@@ -101,6 +114,11 @@ public class Camara {
         return ocrResult;
     }
 
+    /**
+     * FUncion que hagarra imagen tomada y la convierte en texto String
+     * @param filePath path del archivo tomado por opencv que contiene el texto
+     * @return String con texto escaneado
+     */
     private String performOCR(String filePath) {
         ITesseract instance = new Tesseract();
         instance.setDatapath(System.getProperty("user.dir")); // Utiliza el directorio de trabajo actual del proyecto

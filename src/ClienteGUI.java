@@ -4,6 +4,9 @@ import java.awt.event.*;
 import java.io.*;
 import java.net.Socket;
 
+/**
+ * clase cliente
+ */
 public class ClienteGUI {
 
     private JFrame frame;
@@ -13,6 +16,10 @@ public class ClienteGUI {
     private static final int SERVER_PORT = 8080;
     private JButton btnEvaluar;
 
+    /**
+     * funcion principal. inicia al cliente
+     * @param args
+     */
     public static void main(String[] args) {
 //        IntegratedCamera camara = new IntegratedCamera();
 //        camara.captureAndRecognize();
@@ -26,6 +33,11 @@ public class ClienteGUI {
             }
         });
     }
+
+    /**
+     * constructor. crea todos los elementos de la interfaz
+     *
+     */
     public ClienteGUI() {
         frame = new JFrame();
         frame.setBounds(100, 100, 750, 300);
@@ -123,6 +135,9 @@ public class ClienteGUI {
         frame.getContentPane().add(historyCameraPanel);
     }
 
+    /**
+     * funcion que envia expresion al servidor para procesar y evaluar
+     */
     private void enviarExpresion() {
         // Determine from which textField the expression is coming from (Algebraic or Logic)
         String expresion;
