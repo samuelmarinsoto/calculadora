@@ -14,5 +14,6 @@
     <orderEntry type="library" name="opencv-480" level="project" />
     <orderEntry type="library" name="opencv-4.6.0-0" level="project" />
     <orderEntry type="library" name="tess4j-5.8.0" level="application" />
+    <orderEntry type="library" name="tess4j-5.8.02" level="project" />
   </component>
 </module>

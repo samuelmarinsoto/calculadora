@@ -6,17 +6,56 @@ import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
 import org.opencv.imgcodecs.Imgcodecs;
 import net.sourceforge.tess4j.*;
-import java.io.File;
+import org.opencv.highgui.HighGui;
+
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.*;
+import java.net.Socket;
 
 public class Camara {
 
+    private static final String SERVER_ADDRESS = "localhost";
+    private static final int SERVER_PORT = 8080;
+
     static {
-System.load("C:\\Users\\Isaac\\Downloads\\opencv\\build\\java\\x64\\opencv_java480.dll");
+        System.load("C:\\Users\\Isaac\\Downloads\\opencv\\build\\java\\x64\\opencv_java480.dll");
+    }
+
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("Camera OCR");
+        frame.setSize(400, 300);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(null);
+
+        JButton captureButton = new JButton("Capture & Recognize");
+        captureButton.setBounds(100, 50, 200, 30);
+        JTextArea textArea = new JTextArea();
+        textArea.setBounds(50, 100, 300, 100);
+        textArea.setWrapStyleWord(true);
+        textArea.setLineWrap(true);
+        textArea.setCaretPosition(textArea.getDocument().getLength());
+
+        frame.add(captureButton);
+        frame.add(textArea);
+
+        Camara camara = new Camara();
+        captureButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String recognizedText = camara.captureAndRecognize();
+                String texto_resultado = camara.enviarExpresionCamara(recognizedText);
+                textArea.setText(texto_resultado);
+            }
+        });
+
+        frame.setVisible(true);
     }
 
     public String captureAndRecognize() {
         VideoCapture camera = new VideoCapture(0);
-       if (!camera.isOpened()) {
+        if (!camera.isOpened()) {
         System.out.println("Error: Camera not found!");
         return "Camera Error!";
     } else {
@@ -30,7 +69,7 @@ System.load("C:\\Users\\Isaac\\Downloads\\opencv\\build\\java\\x64\\opencv_java4
         Mat frame = new Mat();
 
         String windowName = "Press 'c' to capture";
-        org.opencv.highgui.HighGui.namedWindow(windowName);
+        HighGui.namedWindow(windowName);
 
         String ocrResult = "Error: No image captured.";
 
@@ -59,7 +98,7 @@ System.load("C:\\Users\\Isaac\\Downloads\\opencv\\build\\java\\x64\\opencv_java4
         }
 
         camera.release();
-        org.opencv.highgui.HighGui.destroyAllWindows();
+        HighGui.destroyAllWindows();
 
         return ocrResult;
     }
@@ -76,5 +115,25 @@ System.load("C:\\Users\\Isaac\\Downloads\\opencv\\build\\java\\x64\\opencv_java4
             System.err.println(e.getMessage());
             return "Error while performing OCR.";
         }
+    }
+    /**
+     * Esto se va ejecutar utilizando el input que le dio la camara despues de hacer el OCR
+     * @param expresion la expresion hecha un string
+     */
+    private String enviarExpresionCamara(String expresion) {
+
+        String resultado = null;
+        try (Socket socket = new Socket(SERVER_ADDRESS, SERVER_PORT);
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+
+            out.println(expresion);
+            resultado = in.readLine();
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return resultado;
     }
 }
