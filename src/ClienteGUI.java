@@ -96,7 +96,11 @@ public class ClienteGUI {
         btnHistorial.setForeground(Color.WHITE);
         buttonsPanel.add(btnHistorial);
 
+        // codigo que crea boton para la camara y que cuando termine retorne el string que logro interceptar
+        // ver Camara.java
+        Camara camara = new Camara();
         JButton btnCamera = new JButton("Cámara");
+        btnCamera.addActionListener( e -> enviarExpresionCamara(camara.captureAndRecognize()));
         buttonsPanel.add(btnCamera);
         btnCamera.setBackground(Color.BLACK);
         btnCamera.setForeground(Color.WHITE);
@@ -121,6 +125,26 @@ public class ClienteGUI {
         String expresion;
         expresion = textFieldExpresion.getText();
 
+
+        try (Socket socket = new Socket(SERVER_ADDRESS, SERVER_PORT);
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+
+            out.println(expresion);
+            String resultado = in.readLine();
+            textAreaResultado.setText("Resultado de " + expresion + ":\n" + resultado);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            textAreaResultado.setText("Error al conectarse al servidor.");
+        }
+    }
+
+    /**
+     * Esto se va ejecutar utilizando el input que le dio la camara despues de hacer el OCR
+     * @param expresion la expresion hecha un string
+     */
+    private void enviarExpresionCamara(String expresion){
 
         try (Socket socket = new Socket(SERVER_ADDRESS, SERVER_PORT);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
